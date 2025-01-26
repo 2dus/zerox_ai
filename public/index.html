@@ -104,58 +104,13 @@
             background: #311b92;
             cursor: not-allowed;
         }
-
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            margin: 0;
-        }
-
-        .typing-indicator {
-            display: inline-block;
-            padding: 15px 20px;
-            background: rgba(26, 26, 26, 0.8);
-            border-radius: 15px;
-            margin: 10px 0;
-        }
-
-        .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            margin-right: 3px;
-            background: #9575cd;
-            border-radius: 50%;
-            animation: bounce 1.4s infinite;
-        }
-
-        .dot:nth-child(2) { animation-delay: 0.2s; }
-        .dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes bounce {
-            0%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-        }
-
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1a1a1a;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #4a148c;
-            border-radius: 5px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ZEROX</h1>
         <div class="description">
-            Meet Zerox, your AI coding companion. Specializing in transforming ideas into functional code, Zerox helps with everything from simple scripts to complex applications. Whether you need a game, website, or tool, just describe your idea and watch it come to life.
+            Meet Zerox, your AI coding companion. Describe what you need, and Zerox will assist in turning your ideas into code.
         </div>
         <div class="chat-container" id="chatContainer"></div>
         <div class="input-container">
@@ -175,89 +130,40 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        function addTypingIndicator() {
-            const indicator = document.createElement('div');
-            indicator.className = 'typing-indicator';
-            indicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-            chatContainer.appendChild(indicator);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return indicator;
-        }
-
-        async function typeWriter(text, element) {
-            const codeBlocks = text.split('```');
-            let result = '';
-            
-            for (let i = 0; i < codeBlocks.length; i++) {
-                if (i % 2 === 0) {
-                    for (const char of codeBlocks[i]) {
-                        result += char;
-                        element.innerHTML = `<pre>${result}</pre>`;
-                        await new Promise(resolve => setTimeout(resolve, 10));
-                    }
-                } else {
-                    result += '```' + codeBlocks[i] + '```';
-                    element.innerHTML = `<pre>${result}</pre>`;
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-            }
-        }
-
         async function generateCode() {
             const prompt = document.getElementById('prompt').value;
             const btn = document.getElementById('generateBtn');
-            
             if (!prompt.trim()) return;
-            
+
             btn.disabled = true;
             addMessage(prompt, true);
-            
-            const indicator = addTypingIndicator();
-            
+
             try {
-                const res = await fetch('http://localhost:3000/generate', {
+                const res = await fetch('https://zerox-ai.vercel.app/generate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'claude-3-opus-20240229',
-                        max_tokens: 1024,
-                        messages: [{ 
-                            role: 'user', 
-                            content: "You are Zerox, a smart AI coding assistant. Please help create code for this request: " + prompt 
-                        }]
+                        messages: [
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ]
                     })
                 });
 
                 const data = await res.json();
-                if (data.error) {
-                    throw new Error(data.error);
-                }
+                if (data.error) throw new Error(data.error);
 
-                indicator.remove();
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message bot-message';
-                chatContainer.appendChild(messageDiv);
-                
-                await typeWriter(data.output, messageDiv);
-                document.getElementById('prompt').value = '';
-                
-            } catch (error) {
-                indicator.remove();
-                addMessage('Error: ' + error.message);
+                addMessage(data.output || 'Success! No response content.');
+            } catch (err) {
+                addMessage(`Error: ${err.message}`);
             }
 
             btn.disabled = false;
-            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-
-        document.getElementById('prompt').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                generateCode();
-            }
-        });
     </script>
 </body>
 </html>
