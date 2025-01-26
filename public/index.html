@@ -147,23 +147,39 @@
                     body: JSON.stringify({
                         messages: [
                             {
-                                role: 'user',
+                                role: "user",
                                 content: prompt
                             }
                         ]
                     })
                 });
 
+                if (!res.ok) {
+                    throw new Error(`HTTP Error: ${res.status}`);
+                }
+
                 const data = await res.json();
-                if (data.error) throw new Error(data.error);
 
-                addMessage(data.output || 'Success! No response content.');
+                if (!data.output) {
+                    throw new Error('Invalid server response: No "output" field');
+                }
+
+                addMessage(data.output);
             } catch (err) {
+                console.error('Error:', err.message);
                 addMessage(`Error: ${err.message}`);
+            } finally {
+                btn.disabled = false;
             }
-
-            btn.disabled = false;
         }
+
+        // Auto-submit on pressing Enter
+        document.getElementById('prompt').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                generateCode();
+            }
+        });
     </script>
 </body>
 </html>
